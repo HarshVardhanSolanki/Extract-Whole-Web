@@ -18,13 +18,19 @@ const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbyJN4LC8
 const RAZORPAY_WEBHOOK_SECRET = "kugV3Aq5txeKYh/OsBaLezMPxSxJ0SUQGXgk+nKLpWLlBx2ahix7eya7QYa9quI1";
 const EXT_ID = "ndjmdakdfolbhianpjfcdhbjiabamdco";
 
+const USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+];
+
 const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-const phoneRegex = /(?:\+91[\-\s]?)?[6789]\d{9}/g;
+// Enhanced regex for better mobile number extraction
+const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}|(?:\+91[\-\s]?)?[6-9]\d{9}/g;
 
 async function fetchPage(url) {
     try {
         const { data } = await axios.get(url, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36" },
+            headers: { "User-Agent": USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] },
             timeout: 8000
         });
         return data;
@@ -58,11 +64,9 @@ app.post('/api/scrape', async (req, res) => {
         });
         return local;
     }));
-
     res.json({ success: true, data: results.flat() });
 });
 
-// Verification and Webhook routes remain unchanged for stability
 app.post('/api/verify', async (req, res) => {
     try {
         const response = await axios.post(GOOGLE_SHEET_MACRO_URL, { action: "verifyKey", key: req.body.key, deviceId: req.body.deviceId });
