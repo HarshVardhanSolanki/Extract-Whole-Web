@@ -124,7 +124,7 @@ app.get('/payment-success', (req, res) => {
             <p>You can close this window. The extension will activate automatically.</p>
             <script>
                 // Use your actual Chrome Extension ID from chrome://extensions
-                const EXT_ID = "YOUR_EXTENSION_ID_HERE"; 
+                const EXT_ID = "ndjmdakdfolbhianpjfcdhbjiabamdco"; 
                 if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
                     chrome.runtime.sendMessage(EXT_ID, { action: "activatePro", key: "${key}" });
                 }
@@ -170,3 +170,4 @@ app.post('/api/scrape', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`));
+
