@@ -8,88 +8,19 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         
-        :root {
-            --emerald: #10b981;
-        }
-        body {
-            font-family: 'Inter', system-ui, sans-serif;
-            background: #18181b;
-            color: #e4e4e7;
-            width: 420px;
-            min-height: 620px;
-            margin: 0;
-            overflow: hidden;
-        }
-        .header {
-            background: linear-gradient(90deg, #10b981, #14b8a6);
-            padding: 16px 24px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .search-bar {
-            width: 100%;
-            background: #27272a;
-            border: 1px solid #3f3f46;
-            border-radius: 9999px;
-            padding: 16px 24px;
-            font-size: 17px;
-            outline: none;
-            transition: all 0.3s;
-        }
-        .search-bar:focus {
-            border-color: #10b981;
-            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3);
-        }
-        .btn-primary {
-            background: #10b981;
-            color: white;
-            padding: 12px 28px;
-            border-radius: 9999px;
-            font-weight: 600;
-            border: none;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-primary:hover {
-            background: #059669;
-            transform: translateY(-1px);
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th {
-            text-align: left;
-            padding: 16px 12px;
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: #71717a;
-            border-bottom: 1px solid #3f3f46;
-        }
-        td {
-            padding: 18px 12px;
-            border-bottom: 1px solid #27272a;
-        }
-        .locked-row {
-            filter: blur(4px);
-            opacity: 0.28;
-            position: relative;
-        }
-        .teaser {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95));
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 10;
-            border-radius: 12px;
-        }
-        .locked-row:hover .teaser {
-            display: flex;
-        }
+        :root { --emerald: #10b981; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #18181b; color: #e4e4e7; width: 420px; min-height: 620px; margin: 0; overflow: hidden; }
+        .header { background: linear-gradient(90deg, #10b981, #14b8a6); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
+        .search-bar { width: 100%; background: #27272a; border: 1px solid #3f3f46; border-radius: 9999px; padding: 16px 24px; font-size: 17px; outline: none; transition: all 0.3s; color: white;}
+        .search-bar:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3); }
+        .btn-primary { background: #10b981; color: white; padding: 12px 28px; border-radius: 9999px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
+        .btn-primary:hover { background: #059669; transform: translateY(-1px); }
+        table { width: 100%; border-collapse: collapse; }
+        th { text-align: left; padding: 16px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: #71717a; border-bottom: 1px solid #3f3f46; }
+        td { padding: 18px 12px; border-bottom: 1px solid #27272a; }
+        .locked-row { filter: blur(4px); opacity: 0.28; position: relative; }
+        .teaser { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95)); display: none; align-items: center; justify-content: center; z-index: 10; border-radius: 12px; }
+        .locked-row:hover .teaser { display: flex; }
     </style>
 </head>
 <body>
@@ -101,7 +32,7 @@
                 <p style="margin:0;font-size:12px;opacity:0.9;">AI Lead Extractor</p>
             </div>
         </div>
-        <div onclick="showKeyModal()" style="cursor:pointer;padding:8px 16px;background:rgba(255,255,255,0.2);border-radius:9999px;font-size:13px;display:flex;align-items:center;gap:6px;">
+        <div id="key-icon-btn" style="cursor:pointer;padding:8px 16px;background:rgba(255,255,255,0.2);border-radius:9999px;font-size:13px;display:flex;align-items:center;gap:6px;">
             <i class="fa-solid fa-key"></i>
             <span id="plan-badge">FREE</span>
         </div>
@@ -109,11 +40,8 @@
 
     <div style="padding:24px 24px 16px;">
         <div style="position:relative;">
-            <input id="keyword-input" type="text" placeholder="Darjee Clothings or Shopkeepers in Delhi" 
-                   class="search-bar">
-            <button onclick="startSearch()" 
-                    class="btn-primary"
-                    style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">
+            <input id="keyword-input" type="text" placeholder="Darjee Clothings or Shopkeepers in Delhi" class="search-bar">
+            <button id="search-btn" class="btn-primary" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">
                 <i class="fa-solid fa-magnifying-glass"></i> Extract Now
             </button>
         </div>
@@ -134,17 +62,12 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <h2 style="margin:0;font-size:17px;font-weight:600;">Extracted Leads</h2>
                 <div style="display:flex;gap:8px;">
-                    <button onclick="clearResults()" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;color:white;">🗑️ Clear</button>
+                    <button id="clear-btn" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;color:white;">🗑️ Clear</button>
                 </div>
             </div>
             <table>
                 <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Source</th>
-                        <th>Mobile</th>
-                        <th>Email</th>
-                    </tr>
+                    <tr><th>#</th><th>Source</th><th>Mobile</th><th>Email</th></tr>
                 </thead>
                 <tbody id="results-body"></tbody>
             </table>
@@ -152,7 +75,7 @@
     </div>
 
     <div style="position:fixed;bottom:0;left:0;right:0;background:#18181b;border-top:1px solid #3f3f46;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
-        <div onclick="showUpgradeModal()" style="cursor:pointer;background:#10b981;color:white;padding:10px 24px;border-radius:9999px;font-weight:600;">
+        <div id="footer-upgrade-btn" style="cursor:pointer;background:#10b981;color:white;padding:10px 24px;border-radius:9999px;font-weight:600;">
             Upgrade ₹499/mo
         </div>
         <div id="usage-info" style="color:#71717a;">Free • 2 leads/day</div>
@@ -164,8 +87,8 @@
                 <h3 style="margin:0 0 8px;font-size:22px;">Activate Pro Key</h3>
                 <input id="key-input" placeholder="Paste your key here" style="width:100%;padding:16px;background:#27272a;border:1px solid #3f3f46;border-radius:9999px;margin-top:16px;color:white;">
                 <div style="display:flex;gap:12px;margin-top:24px;">
-                    <button onclick="hideKeyModal()" style="flex:1;padding:16px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;cursor:pointer;">Cancel</button>
-                    <button onclick="activateKey()" style="flex:1;padding:16px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;cursor:pointer;">Activate</button>
+                    <button id="cancel-key-btn" style="flex:1;padding:16px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;cursor:pointer;">Cancel</button>
+                    <button id="activate-key-btn" style="flex:1;padding:16px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;cursor:pointer;">Activate</button>
                 </div>
             </div>
         </div>
@@ -174,190 +97,13 @@
     <div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:100;">
         <div style="background:#18181b;width:380px;border-radius:24px;padding:32px;text-align:center;">
             <h3 style="font-size:28px;margin:0 0 8px;">Unlock 50 Emails + 20 Numbers</h3>
-            <div onclick="initiatePayment()" style="margin:24px 0;background:linear-gradient(90deg,#10b981,#14b8a6);color:white;padding:20px;border-radius:9999px;font-size:22px;font-weight:700;cursor:pointer;">
+            <div id="pay-razorpay-btn" style="margin:24px 0;background:linear-gradient(90deg,#10b981,#14b8a6);color:white;padding:20px;border-radius:9999px;font-size:22px;font-weight:700;cursor:pointer;">
                 Pay ₹499 with Razorpay
             </div>
-            <button onclick="hideUpgradeModal()" style="background:none;border:none;color:#71717a;cursor:pointer;">Maybe later</button>
+            <button id="maybe-later-btn" style="background:none;border:none;color:#71717a;cursor:pointer;">Maybe later</button>
         </div>
     </div>
 
-    <script>
-        // --- PRODUCTION CONFIGURATION ---
-        const RENDER_BACKEND_URL = "https://extract-whole-web.onrender.com";
-        // ⚠️ Replace this with your actual Razorpay Payment Link!
-        const RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/Qvf5EOnY"; 
-        
-        let isPro = false;
-        let dailyCount = 0;
-        let currentResults = [];
-
-        async function loadSettings() {
-            const data = await chrome.storage.local.get(['isPro','dailyCount']);
-            isPro = data.isPro || false;
-            dailyCount = data.dailyCount || 0;
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('plan-badge').textContent = isPro ? 'PRO' : 'FREE';
-            document.getElementById('usage-info').textContent = isPro ? 'PRO • Unlimited' : `Free • ${2 - dailyCount} left today`;
-        }
-
-        function showKeyModal() { document.getElementById('key-modal').style.display = 'flex'; }
-        function hideKeyModal() { document.getElementById('key-modal').style.display = 'none'; }
-        function showUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'flex'; }
-        function hideUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'none'; }
-
-        // Helper to securely generate or retrieve the Device ID
-        async function getDeviceId() {
-            return new Promise(resolve => {
-                chrome.storage.local.get(['deviceId'], (data) => {
-                    if (data.deviceId) {
-                        resolve(data.deviceId);
-                    } else {
-                        const newId = crypto.randomUUID();
-                        chrome.storage.local.set({ deviceId: newId });
-                        resolve(newId);
-                    }
-                });
-            });
-        }
-
-        async function activateKey() {
-            const key = document.getElementById('key-input').value.trim();
-            if (!key) return alert("Please enter a key.");
-            
-            const deviceId = await getDeviceId();
-
-            try {
-                // Call the real Render backend
-                const response = await fetch(`${RENDER_BACKEND_URL}/api/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ key, deviceId })
-                });
-                
-                const result = await response.json();
-
-                if (result.valid) {
-                    alert("✅ " + result.message);
-                    isPro = true;
-                    chrome.storage.local.set({ isPro: true, currentKey: key });
-                    hideKeyModal();
-                    updateUI();
-                } else {
-                    alert("❌ " + result.message);
-                }
-            } catch (err) {
-                alert("❌ Could not connect to the server. Please check your internet or try again.");
-            }
-        }
-
-        function initiatePayment() {
-            hideUpgradeModal();
-            window.open(RAZORPAY_PAYMENT_LINK, '_blank');
-        }
-
-        async function startSearch() {
-            const keyword = document.getElementById('keyword-input').value.trim();
-            if (!keyword) return alert("Please enter a keyword.");
-
-            if (!isPro && dailyCount >= 2) {
-                alert("Daily limit reached. Upgrade to Pro.");
-                showUpgradeModal();
-                return;
-            }
-
-            document.getElementById('status-bar').style.display = 'block';
-            document.getElementById('empty-state').style.display = 'none';
-            document.getElementById('table-wrapper').style.display = 'none';
-
-            try {
-                // Call the real scraping endpoint
-                const response = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ keyword, isPro })
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    currentResults = result.data;
-                    renderTable();
-                    
-                    if (!isPro) {
-                        dailyCount++;
-                        chrome.storage.local.set({dailyCount});
-                    }
-                } else {
-                    alert("Scraping failed: " + result.error);
-                }
-
-            } catch (err) {
-                console.error(err);
-                alert("❌ Server error. Please try again.");
-            }
-
-            document.getElementById('status-bar').style.display = 'none';
-            updateUI();
-        }
-
-        function renderTable() {
-            const tbody = document.getElementById('results-body');
-            tbody.innerHTML = '';
-            
-            // Limit fake display rows based on Pro status
-            const displayLimit = isPro ? currentResults.length : 2;
-
-            currentResults.forEach((lead, i) => {
-                const tr = document.createElement('tr');
-                tr.className = (i >= displayLimit && !isPro) ? 'locked-row' : '';
-                
-                tr.innerHTML = `
-                    <td>${i + 1}</td>
-                    <td><span style="color:#34d399;">${lead.source}</span></td>
-                    <td style="font-family:monospace;">${lead.number || 'NA'}</td>
-                    <td style="font-family:monospace;">${lead.email || 'NA'}</td>
-                `;
-
-                if (i >= displayLimit && !isPro) {
-                    const td = document.createElement('td');
-                    td.colSpan = 4;
-                    td.style.position = 'absolute';
-                    td.style.inset = '0';
-                    td.style.padding = '0';
-                    td.innerHTML = `
-                        <div class="teaser" style="display:flex; width: 100%; height: 100%;">
-                            <div onclick="event.stopImmediatePropagation();showUpgradeModal()" 
-                                 style="background:white;color:#10b981;padding:8px 24px;border-radius:9999px;font-weight:700;cursor:pointer;">
-                                UNLOCK PRO ₹499/mo
-                            </div>
-                        </div>
-                    `;
-                    tr.appendChild(td);
-                }
-                tbody.appendChild(tr);
-            });
-
-            if(currentResults.length > 0) {
-                document.getElementById('table-wrapper').style.display = 'block';
-            } else {
-                alert("No emails or numbers found for this keyword.");
-            }
-        }
-
-        function clearResults() { 
-            currentResults = [];
-            document.getElementById('table-wrapper').style.display = 'none';
-            document.getElementById('empty-state').style.display = 'block';
-            document.getElementById('keyword-input').value = '';
-        }
-
-        window.onload = () => {
-            loadSettings();
-            console.log("%c✅ Extract Whole Web connected to Live Server", "color:#10b981;font-weight:700");
-        };
-    </script>
+    <script src="popup.js"></script>
 </body>
 </html>
