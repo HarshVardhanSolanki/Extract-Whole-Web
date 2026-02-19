@@ -90,10 +90,6 @@
         .locked-row:hover .teaser {
             display: flex;
         }
-        .glass {
-            background: rgba(255,255,255,0.08);
-            backdrop-filter: blur(20px);
-        }
     </style>
 </head>
 <body>
@@ -111,7 +107,6 @@
         </div>
     </div>
 
-    <!-- SEARCH -->
     <div style="padding:24px 24px 16px;">
         <div style="position:relative;">
             <input id="keyword-input" type="text" placeholder="Darjee Clothings or Shopkeepers in Delhi" 
@@ -124,12 +119,10 @@
         </div>
     </div>
 
-    <!-- STATUS -->
     <div id="status-bar" style="display:none;padding:12px 24px;background:#27272a;border-top:1px solid #3f3f46;border-bottom:1px solid #3f3f46;color:#a1a1aa;font-size:14px;">
-        <span id="status-text">Searching Google, Bing, Yahoo & DuckDuckGo...</span>
+        <span id="status-text">Searching the web... Please wait up to 10 seconds.</span>
     </div>
 
-    <!-- RESULTS -->
     <div style="padding:24px;height:calc(100vh - 240px);overflow:auto;" id="results-container">
         <div id="empty-state" style="text-align:center;padding-top:80px;">
             <div style="font-size:52px;margin-bottom:20px;">🔍</div>
@@ -141,15 +134,13 @@
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <h2 style="margin:0;font-size:17px;font-weight:600;">Extracted Leads</h2>
                 <div style="display:flex;gap:8px;">
-                    <button onclick="exportCSV()" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;">📥 CSV</button>
-                    <button onclick="clearResults()" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;">🗑️ Clear</button>
+                    <button onclick="clearResults()" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;color:white;">🗑️ Clear</button>
                 </div>
             </div>
             <table>
                 <thead>
                     <tr>
                         <th>#</th>
-                        <th>Name</th>
                         <th>Source</th>
                         <th>Mobile</th>
                         <th>Email</th>
@@ -160,7 +151,6 @@
         </div>
     </div>
 
-    <!-- FOOTER -->
     <div style="position:fixed;bottom:0;left:0;right:0;background:#18181b;border-top:1px solid #3f3f46;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
         <div onclick="showUpgradeModal()" style="cursor:pointer;background:#10b981;color:white;padding:10px 24px;border-radius:9999px;font-weight:600;">
             Upgrade ₹499/mo
@@ -168,42 +158,41 @@
         <div id="usage-info" style="color:#71717a;">Free • 2 leads/day</div>
     </div>
 
-    <!-- MODALS (same as before) -->
-    <!-- Key Modal -->
     <div id="key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:100;">
         <div style="background:#18181b;width:360px;border-radius:24px;overflow:hidden;">
             <div style="padding:32px;">
                 <h3 style="margin:0 0 8px;font-size:22px;">Activate Pro Key</h3>
-                <input id="key-input" placeholder="Paste your key here" style="width:100%;padding:16px;background:#27272a;border:1px solid #3f3f46;border-radius:9999px;margin-top:16px;">
+                <input id="key-input" placeholder="Paste your key here" style="width:100%;padding:16px;background:#27272a;border:1px solid #3f3f46;border-radius:9999px;margin-top:16px;color:white;">
                 <div style="display:flex;gap:12px;margin-top:24px;">
-                    <button onclick="hideKeyModal()" style="flex:1;padding:16px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;">Cancel</button>
-                    <button onclick="activateKey()" style="flex:1;padding:16px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;">Activate</button>
+                    <button onclick="hideKeyModal()" style="flex:1;padding:16px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;cursor:pointer;">Cancel</button>
+                    <button onclick="activateKey()" style="flex:1;padding:16px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;cursor:pointer;">Activate</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Upgrade Modal -->
     <div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:100;">
         <div style="background:#18181b;width:380px;border-radius:24px;padding:32px;text-align:center;">
             <h3 style="font-size:28px;margin:0 0 8px;">Unlock 50 Emails + 20 Numbers</h3>
             <div onclick="initiatePayment()" style="margin:24px 0;background:linear-gradient(90deg,#10b981,#14b8a6);color:white;padding:20px;border-radius:9999px;font-size:22px;font-weight:700;cursor:pointer;">
                 Pay ₹499 with Razorpay
             </div>
-            <button onclick="hideUpgradeModal()" style="background:none;border:none;color:#71717a;">Maybe later</button>
+            <button onclick="hideUpgradeModal()" style="background:none;border:none;color:#71717a;cursor:pointer;">Maybe later</button>
         </div>
     </div>
 
     <script>
-        // === ALL JS FROM PREVIOUS VERSION (unchanged) ===
+        // --- PRODUCTION CONFIGURATION ---
+        const RENDER_BACKEND_URL = "https://extract-whole-web.onrender.com";
+        // ⚠️ Replace this with your actual Razorpay Payment Link!
+        const RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/Qvf5EOnY"; 
+        
         let isPro = false;
         let dailyCount = 0;
         let currentResults = [];
 
-        const mockLeads = [ /* same mock data as before */ ];
-
         async function loadSettings() {
-            const data = await chrome.storage.local.get(['isPro','dailyCount','lastSearchDate']);
+            const data = await chrome.storage.local.get(['isPro','dailyCount']);
             isPro = data.isPro || false;
             dailyCount = data.dailyCount || 0;
             updateUI();
@@ -219,25 +208,59 @@
         function showUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'flex'; }
         function hideUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'none'; }
 
+        // Helper to securely generate or retrieve the Device ID
+        async function getDeviceId() {
+            return new Promise(resolve => {
+                chrome.storage.local.get(['deviceId'], (data) => {
+                    if (data.deviceId) {
+                        resolve(data.deviceId);
+                    } else {
+                        const newId = crypto.randomUUID();
+                        chrome.storage.local.set({ deviceId: newId });
+                        resolve(newId);
+                    }
+                });
+            });
+        }
+
         async function activateKey() {
             const key = document.getElementById('key-input').value.trim();
-            if (!key) return alert("Enter key");
-            // Your server validation code here (same as before)
-            alert("✅ Key activated (demo)");
-            isPro = true;
-            chrome.storage.local.set({isPro:true});
-            hideKeyModal();
-            updateUI();
+            if (!key) return alert("Please enter a key.");
+            
+            const deviceId = await getDeviceId();
+
+            try {
+                // Call the real Render backend
+                const response = await fetch(`${RENDER_BACKEND_URL}/api/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, deviceId })
+                });
+                
+                const result = await response.json();
+
+                if (result.valid) {
+                    alert("✅ " + result.message);
+                    isPro = true;
+                    chrome.storage.local.set({ isPro: true, currentKey: key });
+                    hideKeyModal();
+                    updateUI();
+                } else {
+                    alert("❌ " + result.message);
+                }
+            } catch (err) {
+                alert("❌ Could not connect to the server. Please check your internet or try again.");
+            }
         }
 
         function initiatePayment() {
             hideUpgradeModal();
-            window.open('https://yourdomain.com/upgrade', '_blank');
+            window.open(RAZORPAY_PAYMENT_LINK, '_blank');
         }
 
         async function startSearch() {
             const keyword = document.getElementById('keyword-input').value.trim();
-            if (!keyword) return alert("Enter keyword");
+            if (!keyword) return alert("Please enter a keyword.");
 
             if (!isPro && dailyCount >= 2) {
                 alert("Daily limit reached. Upgrade to Pro.");
@@ -247,16 +270,35 @@
 
             document.getElementById('status-bar').style.display = 'block';
             document.getElementById('empty-state').style.display = 'none';
+            document.getElementById('table-wrapper').style.display = 'none';
 
-            await new Promise(r => setTimeout(r, 1800));
+            try {
+                // Call the real scraping endpoint
+                const response = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keyword, isPro })
+                });
 
-            currentResults = mockLeads; // replace with real data later
-            renderTable();
+                const result = await response.json();
 
-            if (!isPro) {
-                dailyCount++;
-                chrome.storage.local.set({dailyCount});
+                if (result.success) {
+                    currentResults = result.data;
+                    renderTable();
+                    
+                    if (!isPro) {
+                        dailyCount++;
+                        chrome.storage.local.set({dailyCount});
+                    }
+                } else {
+                    alert("Scraping failed: " + result.error);
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert("❌ Server error. Please try again.");
             }
+
             document.getElementById('status-bar').style.display = 'none';
             updateUI();
         }
@@ -264,27 +306,31 @@
         function renderTable() {
             const tbody = document.getElementById('results-body');
             tbody.innerHTML = '';
-            const limit = isPro ? currentResults.length : 2;
+            
+            // Limit fake display rows based on Pro status
+            const displayLimit = isPro ? currentResults.length : 2;
 
             currentResults.forEach((lead, i) => {
                 const tr = document.createElement('tr');
-                tr.className = (i >= limit && !isPro) ? 'locked-row' : '';
+                tr.className = (i >= displayLimit && !isPro) ? 'locked-row' : '';
+                
                 tr.innerHTML = `
-                    <td>${i+1}</td>
-                    <td>${lead.name}</td>
-                    <td><a href="${lead.url}" target="_blank" style="color:#34d399;">${lead.url.replace('https://','')}</a></td>
-                    <td style="font-family:monospace;">${lead.phone}</td>
-                    <td style="font-family:monospace;">${lead.email}</td>
+                    <td>${i + 1}</td>
+                    <td><span style="color:#34d399;">${lead.source}</span></td>
+                    <td style="font-family:monospace;">${lead.number || 'NA'}</td>
+                    <td style="font-family:monospace;">${lead.email || 'NA'}</td>
                 `;
 
-                if (i >= limit && !isPro) {
+                if (i >= displayLimit && !isPro) {
                     const td = document.createElement('td');
-                    td.colSpan = 5;
-                    td.style.position = 'relative';
+                    td.colSpan = 4;
+                    td.style.position = 'absolute';
+                    td.style.inset = '0';
+                    td.style.padding = '0';
                     td.innerHTML = `
-                        <div class="teaser" style="display:flex;">
+                        <div class="teaser" style="display:flex; width: 100%; height: 100%;">
                             <div onclick="event.stopImmediatePropagation();showUpgradeModal()" 
-                                 style="background:white;color:#10b981;padding:12px 32px;border-radius:9999px;font-weight:700;cursor:pointer;">
+                                 style="background:white;color:#10b981;padding:8px 24px;border-radius:9999px;font-weight:700;cursor:pointer;">
                                 UNLOCK PRO ₹499/mo
                             </div>
                         </div>
@@ -294,15 +340,23 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('table-wrapper').style.display = 'block';
+            if(currentResults.length > 0) {
+                document.getElementById('table-wrapper').style.display = 'block';
+            } else {
+                alert("No emails or numbers found for this keyword.");
+            }
         }
 
-        function exportCSV() { /* same as before */ }
-        function clearResults() { /* same as before */ }
+        function clearResults() { 
+            currentResults = [];
+            document.getElementById('table-wrapper').style.display = 'none';
+            document.getElementById('empty-state').style.display = 'block';
+            document.getElementById('keyword-input').value = '';
+        }
 
         window.onload = () => {
             loadSettings();
-            console.log("%c✅ Extract Whole Web loaded - No CSP issues", "color:#10b981;font-weight:700");
+            console.log("%c✅ Extract Whole Web connected to Live Server", "color:#10b981;font-weight:700");
         };
     </script>
 </body>
