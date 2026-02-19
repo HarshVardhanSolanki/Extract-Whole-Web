@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 // ⚠️ PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL HERE
-const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbwHU7MdKe1nDXhB5s8tfxA-93r2sDu14-xQ1AkzUXAeHgnKMNYM2K3VLV5xaNUVtdAo/exec";
+const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbxK7ewYtZoIMzyvbJT_B-mnvmxRHuzh1UYkb70gS_Ti8BtdYgfHPejy_CyzCkKSNsAW/exec";
 const RAZORPAY_WEBHOOK_SECRET = "kugV3Aq5txeKYh/OsBaLezMPxSxJ0SUQGXgk+nKLpWLlBx2ahix7eya7QYa9quI1";
 
 // 1. VERIFY LICENSE (Extension calls this -> This calls Google Sheets)
