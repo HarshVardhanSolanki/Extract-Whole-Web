@@ -8,9 +8,12 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         :root { --emerald: #10b981; }
-        body { font-family: 'Inter', system-ui, sans-serif; background: #18181b; color: #e4e4e7; width: 420px; min-height: 620px; margin: 0; overflow: hidden; }
+        
+        /* Chrome limits height to 600px. We set to 580px to be safe! */
+        body { font-family: 'Inter', system-ui, sans-serif; background: #18181b; color: #e4e4e7; width: 420px; height: 580px; margin: 0; overflow: hidden; position: relative; }
+        
         .header { background: linear-gradient(90deg, #10b981, #14b8a6); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .search-bar { width: 100%; background: #27272a; border: 1px solid #3f3f46; border-radius: 9999px; padding: 16px 24px; font-size: 17px; outline: none; transition: all 0.3s; color: white;}
+        .search-bar { width: 100%; background: #27272a; border: 1px solid #3f3f46; border-radius: 9999px; padding: 16px 24px; font-size: 17px; outline: none; transition: all 0.3s; color: white; box-sizing: border-box;}
         .search-bar:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.3); }
         .btn-primary { background: #10b981; color: white; padding: 12px 28px; border-radius: 9999px; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; }
         .btn-primary:hover { background: #059669; transform: translateY(-1px); }
@@ -20,6 +23,9 @@
         .locked-row { filter: blur(4px); opacity: 0.28; position: relative; }
         .teaser { position: absolute; inset: 0; background: linear-gradient(135deg, rgba(16,185,129,0.95), rgba(5,150,105,0.95)); display: none; align-items: center; justify-content: center; z-index: 10; border-radius: 12px; }
         .locked-row:hover .teaser { display: flex; }
+        
+        /* Footer stays fixed at bottom */
+        .footer { position:absolute; bottom:0; left:0; right:0; background:#18181b; border-top:1px solid #3f3f46; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; font-size:13px; z-index: 50; }
     </style>
 </head>
 <body>
@@ -39,19 +45,19 @@
 
     <div style="padding:24px 24px 16px;">
         <div style="position:relative;">
-            <input id="keyword-input" type="text" placeholder="Darjee Clothings or Shopkeepers in Delhi" class="search-bar">
+            <input id="keyword-input" type="text" placeholder="Darjee Clothings or Delhi" class="search-bar">
             <button id="search-btn" class="btn-primary" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);">
                 <i class="fa-solid fa-magnifying-glass"></i> Extract Now
             </button>
         </div>
     </div>
 
-    <div id="status-bar" style="display:none;padding:12px 24px;background:#27272a;border-top:1px solid #3f3f46;border-bottom:1px solid #3f3f46;color:#a1a1aa;font-size:14px;">
+    <div id="status-bar" style="display:none;padding:12px 24px;background:#27272a;border-top:1px solid #3f3f46;border-bottom:1px solid #3f3f46;color:#a1a1aa;font-size:14px; text-align: center;">
         <span id="status-text">Searching the web... Please wait up to 10 seconds.</span>
     </div>
 
-    <div style="padding:24px;height:calc(100vh - 240px);overflow:auto;" id="results-container">
-        <div id="empty-state" style="text-align:center;padding-top:80px;">
+    <div style="padding:24px;height:calc(100% - 220px);overflow-y:auto; padding-bottom: 80px;" id="results-container">
+        <div id="empty-state" style="text-align:center;padding-top:40px;">
             <div style="font-size:52px;margin-bottom:20px;">🔍</div>
             <h3 style="margin:0 0 8px;font-size:19px;">Ready to find leads</h3>
             <p style="color:#71717a;max-width:280px;margin:0 auto;">Enter keyword → get emails & numbers instantly</p>
@@ -60,9 +66,7 @@
         <div id="table-wrapper" style="display:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
                 <h2 style="margin:0;font-size:17px;font-weight:600;">Extracted Leads</h2>
-                <div style="display:flex;gap:8px;">
-                    <button id="clear-btn" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;color:white;">🗑️ Clear</button>
-                </div>
+                <button id="clear-btn" style="padding:8px 16px;font-size:13px;background:#27272a;border:none;border-radius:9999px;cursor:pointer;color:white;">🗑️ Clear</button>
             </div>
             <table>
                 <thead>
@@ -73,7 +77,7 @@
         </div>
     </div>
 
-    <div style="position:fixed;bottom:0;left:0;right:0;background:#18181b;border-top:1px solid #3f3f46;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;font-size:13px;">
+    <div class="footer">
         <div id="footer-upgrade-btn" style="cursor:pointer;background:#10b981;color:white;padding:10px 24px;border-radius:9999px;font-weight:600;">
             Upgrade ₹499/mo
         </div>
@@ -81,25 +85,25 @@
     </div>
 
     <div id="key-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:100;">
-        <div style="background:#18181b;width:360px;border-radius:24px;overflow:hidden;">
+        <div style="background:#18181b;width:340px;border-radius:24px;overflow:hidden;">
             <div style="padding:32px;">
                 <h3 style="margin:0 0 8px;font-size:22px;">Activate Pro Key</h3>
-                <input id="key-input" placeholder="Paste your key here" style="width:100%;padding:16px;background:#27272a;border:1px solid #3f3f46;border-radius:9999px;margin-top:16px;color:white;">
+                <input id="key-input" placeholder="Paste your key here" style="width:100%; box-sizing:border-box; padding:16px;background:#27272a;border:1px solid #3f3f46;border-radius:12px;margin-top:16px;color:white;">
                 <div style="display:flex;gap:12px;margin-top:24px;">
-                    <button id="cancel-key-btn" style="flex:1;padding:16px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;cursor:pointer;">Cancel</button>
-                    <button id="activate-key-btn" style="flex:1;padding:16px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;cursor:pointer;">Activate</button>
+                    <button id="cancel-key-btn" style="flex:1;padding:14px;border:1px solid #3f3f46;background:transparent;border-radius:9999px;color:#a1a1aa;cursor:pointer;">Cancel</button>
+                    <button id="activate-key-btn" style="flex:1;padding:14px;background:#10b981;color:white;border:none;border-radius:9999px;font-weight:600;cursor:pointer;">Activate</button>
                 </div>
             </div>
         </div>
     </div>
 
     <div id="upgrade-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.9);align-items:center;justify-content:center;z-index:100;">
-        <div style="background:#18181b;width:380px;border-radius:24px;padding:32px;text-align:center;">
-            <h3 style="font-size:28px;margin:0 0 8px;">Unlock 50 Emails + 20 Numbers</h3>
-            <div id="pay-razorpay-btn" style="margin:24px 0;background:linear-gradient(90deg,#10b981,#14b8a6);color:white;padding:20px;border-radius:9999px;font-size:22px;font-weight:700;cursor:pointer;">
+        <div style="background:#18181b;width:340px;border-radius:24px;padding:32px;text-align:center;">
+            <h3 style="font-size:24px;margin:0 0 8px;">Unlock 50 Emails + 20 Numbers</h3>
+            <div id="pay-razorpay-btn" style="margin:24px 0;background:linear-gradient(90deg,#10b981,#14b8a6);color:white;padding:16px;border-radius:9999px;font-size:18px;font-weight:700;cursor:pointer;">
                 Pay ₹499 with Razorpay
             </div>
-            <button id="maybe-later-btn" style="background:none;border:none;color:#71717a;cursor:pointer;">Maybe later</button>
+            <button id="maybe-later-btn" style="background:none;border:none;color:#71717a;cursor:pointer;font-size:14px;">Maybe later</button>
         </div>
     </div>
 
