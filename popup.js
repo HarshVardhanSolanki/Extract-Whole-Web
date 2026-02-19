@@ -154,7 +154,7 @@ async function startSearch() {
     updateUI();
 }
 
-// Replace the renderTable function in your popup.js
+// Replace the renderTable function in popup.js
 function renderTable() {
     const tbody = document.getElementById('results-body');
     tbody.innerHTML = '';
@@ -164,13 +164,13 @@ function renderTable() {
         const tr = document.createElement('tr');
         if (i >= displayLimit && !isPro) tr.className = 'locked-row';
 
-        // Column Format: S.No | Website Link | Mobile | Email
+        // Format: S.No | Website Link | Mobile | Email
         tr.innerHTML = `
             <td>${i + 1}</td>
-            <td style="max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <a href="${lead.source}" target="_blank" style="color: #10b981; text-decoration: none;">${lead.source}</a>
+            <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <a href="${lead.website}" target="_blank" style="color: #10b981; text-decoration: none;">${lead.website}</a>
             </td>
-            <td style="font-family: monospace;">${lead.number}</td>
+            <td style="font-family: monospace;">${lead.mobile}</td>
             <td style="font-family: monospace;">${lead.email}</td>
         `;
 
@@ -179,10 +179,7 @@ function renderTable() {
             td.colSpan = 4;
             td.style.position = 'absolute';
             td.style.inset = '0';
-            td.innerHTML = `
-                <div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; background:rgba(24,24,27,0.85); border-radius: 4px;">
-                    <div class="upgrade-teaser-btn" style="background:#10b981; color:white; padding:8px 16px; border-radius:9999px; font-weight:700; cursor:pointer; font-size: 11px;">UNLOCK 100+ LEADS</div>
-                </div>`;
+            td.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; background:rgba(24,24,27,0.85);"><div class="upgrade-teaser-btn" style="background:#10b981; color:white; padding:6px 12px; border-radius:9999px; font-weight:700; cursor:pointer; font-size:10px;">UNLOCK 100+ LEADS</div></div>`;
             tr.appendChild(td);
         }
         tbody.appendChild(tr);
