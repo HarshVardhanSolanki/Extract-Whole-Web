@@ -42,8 +42,8 @@ async function fetchPage(url, signal) {
 
 function getEngines(keyword, page) {
     return [
-        { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}` },
-        { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}` }
+        { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}` }
+        // { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}` }
     ];
 }
 
