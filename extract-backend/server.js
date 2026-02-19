@@ -15,7 +15,7 @@ app.use(express.json({
 }));
 
 // Your Google Apps Script Web App URL
-const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbwJYJNrWmmvG09uLMtKKyAiKE_Hni-7Rncn5Ez8aag3L9zKWyNTW3LTlt8TUbfqLafo/exec";
+const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbxp-e0JIKEhenJObzZICQFb5u2S43eOCNYV3cmryPYGK4AK-iX_gElF1YFTmC-qTGLq/exec";
 const RAZORPAY_WEBHOOK_SECRET = "kugV3Aq5txeKYh/OsBaLezMPxSxJ0SUQGXgk+nKLpWLlBx2ahix7eya7QYa9quI1";
 
 // 1. VERIFY LICENSE (Called by the Extension)
@@ -156,4 +156,5 @@ app.post('/api/scrape', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`));
+
 
