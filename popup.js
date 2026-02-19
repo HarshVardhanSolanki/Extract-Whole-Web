@@ -91,7 +91,18 @@ async function activateKey() {
 async function initiatePayment() {
     hideUpgradeModal();
     const deviceId = await getDeviceId();
-    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}`, '_blank');
+    
+    // Opens a small focused window instead of a full tab
+    const width = 450;
+    const height = 650;
+    const left = (screen.width / 2) - (width / 2);
+    const top = (screen.height / 2) - (height / 2);
+    
+    window.open(
+        `${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}`, 
+        'RazorpayCheckout', 
+        `width=${width},height=${height},top=${top},left=${left},status=no,menubar=no,resizable=yes`
+    );
 }
 
 async function startSearch() {
@@ -178,3 +189,4 @@ function clearResults() {
     document.getElementById('empty-state').style.display = 'block';
     document.getElementById('keyword-input').value = '';
 }
+
