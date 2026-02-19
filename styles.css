@@ -5,11 +5,11 @@ input { width: 100%; padding: 12px; border-radius: 9999px; background: #27272a; 
 .btn-primary { position: absolute; right: 5px; top: 5px; background: #10b981; border: none; border-radius: 9999px; padding: 8px 15px; color: white; cursor: pointer; }
 .btn-stop { position: absolute; right: 5px; top: 5px; background: #ef4444; border: none; border-radius: 9999px; padding: 8px 15px; color: white; cursor: pointer; font-weight: bold; }
 #results-container { flex: 1; overflow-y: auto; padding: 0 20px 80px; }
-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
 th, td { text-align: left; padding: 10px; border-bottom: 1px solid #27272a; }
 .footer { position: fixed; bottom: 0; left: 0; right: 0; background: #18181b; border-top: 1px solid #3f3f46; padding: 12px 20px; display: flex; justify-content: space-between; }
 .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; z-index: 100; }
-.modal-content { background: #18181b; padding: 20px; border-radius: 15px; border: 1px solid #3f3f46; width: 300px; }
-.plan-card { border: 1px solid #3f3f46; padding: 15px; margin-top: 10px; border-radius: 10px; cursor: pointer; background: #27272a; }
+.modal-content { background: #18181b; padding: 20px; border-radius: 15px; border: 1px solid #3f3f46; width: 300px; text-align: center; }
+.plan-card { border: 1px solid #3f3f46; padding: 15px; margin-top: 10px; border-radius: 10px; cursor: pointer; background: #27272a; text-align: left; }
 .plan-card:hover { border-color: #10b981; }
-#status-bar { text-align: center; color: #10b981; font-size: 12px; padding: 5px; }
+#status-bar { text-align: center; color: #10b981; font-size: 11px; padding: 5px; font-weight: bold; }
