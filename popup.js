@@ -1,195 +1,137 @@
 const RENDER_BACKEND_URL = "https://extract-whole-web.onrender.com";
 let isPro = false;
-let dailyCount = 0;
+let isSearching = false;
 let currentResults = [];
-
-function safeAddListener(id, func) {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('click', func);
-}
+let seenKeys = new Set();
 
 function initializeExtension() {
     loadSettings();
-    
-    // Core Buttons
-    safeAddListener('pay-sub-btn', () => initiatePayment('sub'));
-    safeAddListener('pay-once-btn', () => initiatePayment('once'));
-    safeAddListener('key-icon-btn', showKeyModal);
-    safeAddListener('search-btn', startSearch);
-    safeAddListener('clear-btn', clearResults);
-    safeAddListener('footer-upgrade-btn', showUpgradeModal);
-    safeAddListener('cancel-key-btn', hideKeyModal);
-    safeAddListener('activate-key-btn', activateKey);
-    safeAddListener('maybe-later-btn', hideUpgradeModal);
-
-    document.body.addEventListener('click', (e) => {
-        if (e.target.classList.contains('upgrade-teaser-btn')) showUpgradeModal();
-    });
-}
-
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeExtension);
-else initializeExtension();
-
-async function loadSettings() {
-    const data = await chrome.storage.local.get(['isPro', 'dailyCount', 'currentKey']);
-    isPro = data.isPro || false;
-    dailyCount = data.dailyCount || 0;
-    if (isPro && data.currentKey) verifySession(data.currentKey);
-    updateUI();
-}
-
-async function verifySession(key) {
-    const deviceId = await getDeviceId();
-    try {
-        const res = await fetch(`${RENDER_BACKEND_URL}/api/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key, deviceId })
-        });
-        const result = await res.json();
-        if (!result.valid) handleLogout();
-    } catch (e) { console.error("Session check failed."); }
-}
-
-function handleLogout() {
-    chrome.storage.local.set({ isPro: false, currentKey: null });
-    isPro = false;
-    updateUI();
-    alert("Logged Out: Key used on another device.");
-}
-
-function updateUI() {
-    const badge = document.getElementById('plan-badge');
-    const info = document.getElementById('usage-info');
-    if (badge) badge.textContent = isPro ? 'PRO' : 'FREE';
-    if (info) info.textContent = isPro ? 'PRO • Unlimited' : `Free • ${2 - dailyCount} left today`;
-    
-    const upgradeBtn = document.getElementById('footer-upgrade-btn');
-    const keyBtn = document.getElementById('key-icon-btn');
-    if (isPro) {
-        if (upgradeBtn) upgradeBtn.style.display = 'none';
-        if (keyBtn) keyBtn.style.display = 'none';
-        document.querySelector('.footer').style.justifyContent = 'center';
-    } else {
-        if (upgradeBtn) upgradeBtn.style.display = 'block';
-        if (keyBtn) keyBtn.style.display = 'block';
-    }
-}
-
-function showKeyModal() { document.getElementById('key-modal').style.display = 'flex'; }
-function hideKeyModal() { document.getElementById('key-modal').style.display = 'none'; }
-function showUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'flex'; }
-function hideUpgradeModal() { document.getElementById('upgrade-modal').style.display = 'none'; }
-
-async function getDeviceId() {
-    return new Promise(resolve => {
-        chrome.storage.local.get(['deviceId'], (data) => {
-            if (data.deviceId) resolve(data.deviceId);
-            else {
-                const newId = crypto.randomUUID();
-                chrome.storage.local.set({ deviceId: newId });
-                resolve(newId);
-            }
-        });
-    });
-}
-
-async function activateKey() {
-    const key = document.getElementById('key-input').value.trim();
-    if (!key) return alert("Enter key.");
-    const deviceId = await getDeviceId();
-    document.getElementById('activate-key-btn').innerText = "Verifying...";
-    try {
-        const response = await fetch(`${RENDER_BACKEND_URL}/api/verify`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ key, deviceId })
-        });
-        const result = await response.json();
-        if (result.valid) {
-            isPro = true;
-            await chrome.storage.local.set({ isPro: true, currentKey: key });
-            hideKeyModal();
-            updateUI();
-        } else alert("❌ " + result.message);
-    } catch (err) { alert("❌ Server error."); }
-    document.getElementById('activate-key-btn').innerText = "Activate";
-}
-
-async function initiatePayment(mode = 'once') {
-    hideUpgradeModal();
-    const deviceId = await getDeviceId();
-    const width = 450;
-    const height = 650;
-    const left = (screen.width / 2) - (width / 2);
-    const top = (screen.height / 2) - (height / 2);
-    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}&type=${mode}`, 'RazorpayCheckout', `width=${width},height=${height},top=${top},left=${left},status=no,menubar=no,resizable=yes`);
+    document.getElementById('search-btn').addEventListener('click', startSearch);
+    document.getElementById('stop-btn').addEventListener('click', stopSearch);
+    document.getElementById('key-icon-btn').addEventListener('click', () => document.getElementById('key-modal').style.display = 'flex');
+    document.getElementById('footer-upgrade-btn').addEventListener('click', () => document.getElementById('upgrade-modal').style.display = 'flex');
+    document.getElementById('cancel-key-btn').addEventListener('click', () => document.getElementById('key-modal').style.display = 'none');
+    document.getElementById('activate-key-btn').addEventListener('click', activateKey);
+    document.getElementById('pay-sub-btn').addEventListener('click', () => initiatePayment('sub'));
+    document.getElementById('pay-once-btn').addEventListener('click', () => initiatePayment('once'));
+    document.getElementById('maybe-later-btn').addEventListener('click', () => document.getElementById('upgrade-modal').style.display = 'none');
+    document.getElementById('clear-btn').addEventListener('click', () => { currentResults = []; seenKeys.clear(); renderTable(); document.getElementById('empty-state').style.display = 'block'; });
 }
 
 async function startSearch() {
     const keyword = document.getElementById('keyword-input').value.trim();
     if (!keyword) return alert("Enter keyword.");
-    if (!isPro && dailyCount >= 2) { showUpgradeModal(); return; }
-    document.getElementById('status-bar').style.display = 'block';
+
+    // Reset state for new search
+    isSearching = true;
+    currentResults = [];
+    seenKeys.clear();
+    updateButtonStates(true);
+
+    const isSpecific = keyword.toLowerCase().includes("contact") || keyword.split(" ").length < 3;
+    const targetCount = isSpecific ? 10 : 100;
+    let page = 0;
+
     document.getElementById('empty-state').style.display = 'none';
-    document.getElementById('table-wrapper').style.display = 'none';
-    document.getElementById('search-btn').disabled = true;
-    try {
-        const response = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ keyword, isPro })
-        });
-        const result = await response.json();
-        if (result.success) {
-            currentResults = result.data;
-            if (currentResults.length > 0) {
+    document.getElementById('status-bar').style.display = 'block';
+
+    while (isSearching && currentResults.length < targetCount && page < 15) {
+        try {
+            const res = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ keyword, isPro, page })
+            });
+            const result = await res.json();
+            
+            if (result.success && result.data.length > 0) {
+                result.data.forEach(lead => {
+                    const key = `${lead.email}-${lead.mobile}`;
+                    if (!seenKeys.has(key) && (lead.email !== "NA" || lead.mobile !== "NA")) {
+                        seenKeys.add(key);
+                        currentResults.push(lead);
+                    }
+                });
                 renderTable();
-                if (!isPro) { dailyCount++; chrome.storage.local.set({dailyCount}); }
-            } else document.getElementById('empty-state').style.display = 'block';
-        }
-    } catch (err) { alert("❌ Server error."); }
-    document.getElementById('status-bar').style.display = 'none';
-    document.getElementById('search-btn').disabled = false;
-    updateUI();
+            } else if (page > 2 && result.data.length === 0) {
+                alert("No more extraction found.");
+                break;
+            }
+            page++;
+        } catch (e) { break; }
+    }
+    stopSearch();
 }
 
-// Replace the renderTable function in popup.js
+function stopSearch() {
+    isSearching = false;
+    updateButtonStates(false);
+    document.getElementById('status-bar').style.display = 'none';
+}
+
+function updateButtonStates(searching) {
+    document.getElementById('search-btn').style.display = searching ? 'none' : 'block';
+    document.getElementById('stop-btn').style.display = searching ? 'block' : 'none';
+}
+
 function renderTable() {
     const tbody = document.getElementById('results-body');
     tbody.innerHTML = '';
+    const wrapper = document.getElementById('table-wrapper');
     const displayLimit = isPro ? currentResults.length : 2;
 
     currentResults.forEach((lead, i) => {
         const tr = document.createElement('tr');
         if (i >= displayLimit && !isPro) tr.className = 'locked-row';
-
-        // Format: S.No | Website Link | Mobile | Email
         tr.innerHTML = `
             <td>${i + 1}</td>
-            <td style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <a href="${lead.website}" target="_blank" style="color: #10b981; text-decoration: none;">${lead.website}</a>
-            </td>
-            <td style="font-family: monospace;">${lead.mobile}</td>
-            <td style="font-family: monospace;">${lead.email}</td>
-        `;
-
-        if (i >= displayLimit && !isPro) {
-            const td = document.createElement('td');
-            td.colSpan = 4;
-            td.style.position = 'absolute';
-            td.style.inset = '0';
-            td.innerHTML = `<div style="display:flex; justify-content:center; align-items:center; width:100%; height:100%; background:rgba(24,24,27,0.85);"><div class="upgrade-teaser-btn" style="background:#10b981; color:white; padding:6px 12px; border-radius:9999px; font-weight:700; cursor:pointer; font-size:10px;">UNLOCK 100+ LEADS</div></div>`;
-            tr.appendChild(td);
-        }
+            <td style="max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><a href="${lead.website}" target="_blank" style="color:#10b981;">${lead.website}</a></td>
+            <td>${lead.mobile}</td>
+            <td>${lead.email}</td>`;
         tbody.appendChild(tr);
     });
-    document.getElementById('table-wrapper').style.display = 'block';
+    wrapper.style.display = currentResults.length > 0 ? 'block' : 'none';
 }
 
-function clearResults() { 
-    currentResults = [];
-    document.getElementById('table-wrapper').style.display = 'none';
-    document.getElementById('empty-state').style.display = 'block';
-    document.getElementById('keyword-input').value = '';
+// Support functions (loadSettings, activateKey, getDeviceId, initiatePayment) are standard local storage handlers
+async function loadSettings() {
+    const data = await chrome.storage.local.get(['isPro', 'dailyCount', 'currentKey']);
+    isPro = data.isPro || false;
+    updateUI();
 }
+
+function updateUI() {
+    document.getElementById('plan-badge').textContent = isPro ? 'PRO' : 'FREE';
+    if (isPro) {
+        document.getElementById('footer-upgrade-btn').style.display = 'none';
+        document.getElementById('key-icon-btn').style.display = 'none';
+    }
+}
+
+async function getDeviceId() {
+    const data = await chrome.storage.local.get(['deviceId']);
+    if (data.deviceId) return data.deviceId;
+    const newId = crypto.randomUUID();
+    await chrome.storage.local.set({ deviceId: newId });
+    return newId;
+}
+
+async function activateKey() {
+    const key = document.getElementById('key-input').value.trim();
+    const deviceId = await getDeviceId();
+    const res = await fetch(`${RENDER_BACKEND_URL}/api/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, deviceId }) });
+    const result = await res.json();
+    if (result.valid) {
+        await chrome.storage.local.set({ isPro: true, currentKey: key });
+        isPro = true;
+        updateUI();
+        document.getElementById('key-modal').style.display = 'none';
+    }
+}
+
+async function initiatePayment(type) {
+    const deviceId = await getDeviceId();
+    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}&type=${type}`, 'RZP', 'width=450,height=650');
+}
+
+initializeExtension();
