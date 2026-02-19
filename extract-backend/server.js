@@ -34,26 +34,55 @@ app.post('/api/verify', async (req, res) => {
     }
 });
 
+// 2. DYNAMIC CHECKOUT (Fixes the Button Type mismatch)
 app.get('/checkout', (req, res) => {
     const { deviceId, type } = req.query;
-    // IMPORTANT: Subscription buttons use 'data-subscription_button_id'
-    const buttonId = (type === 'sub') ? "pl_SI7a1dghQQ6lSR" : "pl_SI7a1dghQQ6lSR";
+    
+    let config = {};
+
+    if (type === 'sub') {
+        // CONFIG FOR AUTO-DEDUCTION (Subscription)
+        config = {
+            script: "https://cdn.razorpay.com/static/widget/subscription-button.js",
+            attr: "data-subscription_button_id",
+            id: "pl_SI7a1dghQQ6lSR" // Your Subscription Button ID
+        };
+    } else {
+        // CONFIG FOR ONE-TIME (Manual Payment)
+        config = {
+            script: "https://checkout.razorpay.com/v1/payment-button.js",
+            attr: "data-payment_button_id",
+            id: "pl_SI8NJDt9G2ztRL" // Your One-time Button ID
+        };
+    }
 
     res.send(`
-    <html><body style="background:#18181b;color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;">
-        <h2>Opening Secure ${type === 'sub' ? 'Subscription' : 'Checkout'}...</h2>
+    <!DOCTYPE html>
+    <html>
+    <head><title>Secure Checkout</title></head>
+    <body style="background:#18181b;color:white;display:flex;flex-direction:column;justify-content:center;align-items:center;height:100vh;font-family:sans-serif;margin:0;">
+        <h2 style="margin-bottom:20px;">Opening Secure ${type === 'sub' ? 'Subscription' : 'Checkout'}...</h2>
         <form id="razorpay-form">
-            <script src="https://checkout.razorpay.com/v1/payment-button.js"
-                data-payment_button_id="${buttonId}" 
-                data-notes.device_id="${deviceId || ""}" async></script>
+            <script 
+                src="${config.script}"
+                ${config.attr}="${config.id}" 
+                data-notes.device_id="${deviceId || ""}"
+                data-button_theme="brand-color"
+                async>
+            </script>
         </form>
         <script>
+            // Automatically click the Razorpay button once it's rendered
             const checkBtn = setInterval(() => {
                 const btn = document.querySelector('.razorpay-payment-button');
-                if(btn) { btn.click(); clearInterval(checkBtn); }
+                if(btn) { 
+                    btn.click(); 
+                    clearInterval(checkBtn); 
+                }
             }, 500);
         </script>
-    </body></html>`);
+    </body>
+    </html>`);
 });
 
 app.post('/webhook/razorpay', async (req, res) => {
