@@ -1,51 +1,55 @@
-// background.js - Extract Whole Web
-// Service Worker (Manifest V3)
+// background.js - Central Security Logic
 
-console.log("Extract Whole Web - Background service worker started successfully");
+// 1. INITIALIZATION: Generate Fingerprint on Install
+chrome.runtime.onInstalled.addListener((details) => {
+    if (details.reason === "install") {
+        const deviceId = crypto.randomUUID(); // Your unique machine ID
+        chrome.storage.local.set({
+            isPro: false,          // The "registered" flag
+            deviceId: deviceId,    // Approved machine ID
+            dailyCount: 0
+        }, () => {
+            console.log("✅ Unique Device Fingerprint assigned: " + deviceId);
+        });
+    }
+});
 
-// 1. AUTOMATIC ACTIVATION LISTENER
-// This catches the message from your Render /payment-success page
+// 2. EXTERNAL ACTIVATION: Auto-register from Render Success Page
 chrome.runtime.onMessageExternal.addListener((message, sender, sendResponse) => {
     if (message.action === "activatePro") {
-        // Automatically save the pro status and the key received from the server
+        // Flag the device as registered and store the key
         chrome.storage.local.set({ 
             isPro: true, 
             currentKey: message.key 
         }, () => {
-            console.log("✅ Pro Status activated automatically via Payment Success Page");
+            console.log("🚀 Pro status registered via external activation.");
             sendResponse({ success: true });
         });
-        return true; // Keeps the message channel open
+        return true; 
     }
 });
 
-// 2. INSTALLATION LOGIC
-chrome.runtime.onInstalled.addListener((details) => {
-    console.log("%c✅ Extract Whole Web installed successfully", "color:#10b981; font-weight:600");
+// 3. INTERNAL VALIDATION: Heartbeat for "Single Device" check
+chrome.runtime.onStartup.addListener(async () => {
+    const data = await chrome.storage.local.get(['isPro', 'currentKey', 'deviceId']);
     
-    if (details.reason === "install") {
-        // Initialize storage with default values
-        chrome.storage.local.set({
-            isPro: false,
-            dailyCount: 0,
-            lastSearchDate: new Date().toLocaleDateString()
-        });
+    // If the user is supposed to be PRO, check if they still "own" the key
+    if (data.isPro && data.currentKey) {
+        try {
+            const res = await fetch("https://extract-whole-web.onrender.com/api/verify", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: data.currentKey, deviceId: data.deviceId })
+            });
+            const result = await res.json();
 
-        // Generate and save Device ID immediately on install
-        const newId = crypto.randomUUID();
-        chrome.storage.local.set({ deviceId: newId });
-        console.log("Generated Device ID:", newId);
+            // If the Sheet shows a different device ID, log this one out
+            if (!result.valid) {
+                chrome.storage.local.set({ isPro: false, currentKey: null });
+                console.log("❌ Device Mismatch: Flagged as unregistered.");
+            }
+        } catch (e) {
+            console.log("⚠️ Offline: Preserving last known registration state.");
+        }
     }
 });
-
-// 3. INTERNAL MESSAGE LISTENER (From Popup)
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.action === "getDeviceId") {
-        chrome.storage.local.get("deviceId", (data) => {
-            sendResponse({ deviceId: data.deviceId || "NOT_FOUND" });
-        });
-        return true;
-    }
-});
-
-console.log("🚀 All listeners registered - extension is ready");
