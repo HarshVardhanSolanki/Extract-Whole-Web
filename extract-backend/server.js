@@ -28,6 +28,7 @@ const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}|(?:\+91[\-\s]?)?[6-9]\d{9}/g;
 const TARGET_CONTACTS = 100;
 const activeSearches = new Map();
+const BLOCKED_HOSTS = ['google.', 'bing.com', 'search.yahoo.com', 'yahoo.com', 'duckduckgo.com'];
 
 async function fetchPage(url, signal) {
     try {
@@ -41,6 +42,92 @@ async function fetchPage(url, signal) {
 
 function getEngines(keyword, page) {
     return [
+        { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}` },
+        { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}` }
+    ];
+}
+
+function normalizeResultUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('/url?q=')) {
+        const raw = url.split('/url?q=')[1] || '';
+        return decodeURIComponent(raw.split('&')[0] || '').trim();
+    }
+    return url.trim();
+}
+
+function isValidSourceUrl(url) {
+    if (!url || !/^https?:\/\//i.test(url)) return false;
+    try {
+        const host = new URL(url).hostname.toLowerCase();
+        return !BLOCKED_HOSTS.some((blocked) => host.includes(blocked));
+    } catch (e) {
+        return false;
+    }
+}
+
+function collectGoogleLinks(html) {
+    const $ = cheerio.load(html);
+    const seen = new Set();
+    const urls = [];
+    $('.g a[href]').each((i, el) => {
+        const href = normalizeResultUrl($(el).attr('href'));
+        if (!isValidSourceUrl(href) || seen.has(href)) return;
+        seen.add(href);
+        urls.push(href);
+    });
+    return urls;
+}
+
+function collectBingLinks(html) {
+    const $ = cheerio.load(html);
+    const seen = new Set();
+    const urls = [];
+    $('.b_algo h2 a[href]').each((i, el) => {
+        const href = normalizeResultUrl($(el).attr('href'));
+        if (!isValidSourceUrl(href) || seen.has(href)) return;
+        seen.add(href);
+        urls.push(href);
+    });
+    return urls;
+}
+
+function extractContactsFromSource(html, sourceUrl) {
+    const text = cheerio.load(html).text();
+    const emails = [...new Set(text.match(emailRegex) || [])];
+    const phones = [...new Set(text.match(phoneRegex) || [])]
+        .map((value) => value.replace(/\s+/g, ' ').trim())
+        .filter((value) => value.replace(/\D/g, '').length >= 10);
+
+    const count = Math.max(emails.length, phones.length);
+    const local = [];
+    for (let j = 0; j < count; j++) {
+        local.push({ website: sourceUrl, mobile: phones[j] || "NA", email: emails[j] || "NA" });
+    }
+    return local;
+}
+
+async function scrapePage(keyword, page, signal) {
+    const engines = getEngines(keyword, page);
+    const collected = [];
+
+    for (const engine of engines) {
+        if (signal?.aborted) break;
+        const searchHtml = await fetchPage(engine.url, signal);
+        if (!searchHtml) continue;
+
+        const links = engine.name === 'Google' ? collectGoogleLinks(searchHtml) : collectBingLinks(searchHtml);
+
+        for (const sourceUrl of links) {
+            if (signal?.aborted) break;
+            const sourceHtml = await fetchPage(sourceUrl, signal);
+            if (!sourceHtml) continue;
+            const extracted = extractContactsFromSource(sourceHtml, sourceUrl);
+            if (extracted.length > 0) collected.push(...extracted);
+        }
+    }
+
+    return collected;
         { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}`, container: ".g", link: "a" },
         { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}`, container: ".b_algo", link: "a" }
     ];
