@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
@@ -8,18 +7,18 @@ const cheerio = require('cheerio');
 const app = express();
 app.use(cors());
 
-// CRITICAL: Capture raw body for Razorpay signature verification
+// Capture raw body for Razorpay signature verification
 app.use(express.json({
     verify: (req, res, buf) => {
         req.rawBody = buf;
     }
 }));
 
-// Your Google Apps Script Web App URL
 const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbwDPrtHngB4ZloaUck9ivssJoeblq08KVIavH5zudLhm9ujkUNuiT902mLGSVKLxo_S/exec";
 const RAZORPAY_WEBHOOK_SECRET = "kugV3Aq5txeKYh/OsBaLezMPxSxJ0SUQGXgk+nKLpWLlBx2ahix7eya7QYa9quI1";
+const EXT_ID = "ndjmdakdfolbhianpjfcdhbjiabamdco"; 
 
-// 1. VERIFY LICENSE (Called by the Extension)
+// 1. VERIFY LICENSE
 app.post('/api/verify', async (req, res) => {
     try {
         const response = await axios.post(GOOGLE_SHEET_MACRO_URL, {
@@ -33,11 +32,10 @@ app.post('/api/verify', async (req, res) => {
     }
 });
 
-// 2. RAZORPAY HOSTED CHECKOUT PAGE
-// This creates the "instance-like" window and passes the Device ID into payment notes
+// 2. HOSTED CHECKOUT (Fixes "Cannot GET /checkout")
 app.get('/checkout', (req, res) => {
     const deviceId = req.query.deviceId || "";
-    const html = `
+    res.send(`
     <!DOCTYPE html>
     <html>
     <head>
@@ -52,109 +50,85 @@ app.get('/checkout', (req, res) => {
         <div class="loader"></div>
         <h2>Opening Secure Checkout...</h2>
         <form id="razorpay-form">
-            <script
-                src="https://checkout.razorpay.com/v1/payment-button.js"
+            <script src="https://checkout.razorpay.com/v1/payment-button.js"
                 data-payment_button_id="pl_SI5WenIOz8WnOS" 
                 data-notes.device_id="${deviceId}"
-                async>
-            </script>
+                async></script>
         </form>
         <script>
-            // Automatically click the payment button once it loads
             const checkBtn = setInterval(() => {
                 const btn = document.querySelector('.razorpay-payment-button');
-                if(btn) {
-                    btn.click();
-                    clearInterval(checkBtn);
-                }
+                if(btn) { btn.click(); clearInterval(checkBtn); }
             }, 500);
         </script>
     </body>
-    </html>
-    `;
-    res.send(html);
+    </html>`);
 });
 
 // 3. RAZORPAY WEBHOOK (Captures Payment and Saves Key + Device ID)
 app.post('/webhook/razorpay', async (req, res) => {
     const signature = req.headers['x-razorpay-signature'];
     const expectedSignature = crypto.createHmac('sha256', RAZORPAY_WEBHOOK_SECRET)
-                                    .update(req.rawBody)
-                                    .digest('hex');
+                                    .update(req.rawBody).digest('hex');
 
     if (expectedSignature !== signature) {
-        console.error("❌ Invalid Webhook Signature");
         return res.status(400).send("Invalid signature");
     }
 
     if (req.body.event === 'payment.captured') {
         const payment = req.body.payload.payment.entity;
-        const email = payment.email;
-        
-        // FIX: Extract Device ID from payment notes captured during checkout
+        // Correctly capture device_id from notes
         const deviceId = (payment.notes && payment.notes.device_id) ? payment.notes.device_id : "";
-        
         const newKey = crypto.randomBytes(8).toString('hex').toUpperCase();
-        const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days
+        const expiresAt = Date.now() + (30 * 24 * 60 * 60 * 1000);
 
         try {
             await axios.post(GOOGLE_SHEET_MACRO_URL, {
                 action: "saveKey",
                 key: newKey,
-                deviceId: deviceId, // Correctly saves Device ID to Google Sheets
+                deviceId: deviceId,
                 expiresAt: expiresAt,
-                email: email
+                email: payment.email
             });
-            console.log(`✅ Key ${newKey} saved for ${email} (Device: ${deviceId})`);
+            console.log(`✅ Key ${newKey} saved for ${payment.email}`);
         } catch (err) {
-            console.error("❌ Error saving to Google Sheets:", err.message);
+            console.error("❌ Sheet Save Error:", err.message);
         }
     }
     res.status(200).send("OK");
 });
 
-// 4. PAYMENT SUCCESS REDIRECT
-// This page automatically communicates with your extension to activate it
+// 4. PAYMENT SUCCESS REDIRECT (Automatic Activation)
 app.get('/payment-success', (req, res) => {
-    const key = req.query.key || "Check your email";
+    // IMPORTANT: In your Razorpay dashboard, set redirect to: 
+    // https://extract-whole-web.onrender.com/payment-success
+    const key = req.query.key || "Activating..."; 
     res.send(`
         <html>
         <body style="background:#18181b;color:white;text-align:center;padding-top:50px;font-family:sans-serif;">
             <h2 style="color:#10b981;">✅ Payment Successful!</h2>
-            <p>Your Key: <strong>${key}</strong></p>
-            <p>You can close this window. The extension will activate automatically.</p>
+            <p>Your license is being activated automatically.</p>
             <script>
-                // Use your actual Chrome Extension ID from chrome://extensions
-                
-// Instead of a hardcoded ID, search for the extension
-const EXT_ID = "ndjmdakdfolbhianpjfcdhbjiabamdco"; // Only update this once published
-
-if (window.chrome && chrome.runtime && chrome.runtime.sendMessage) {
-    chrome.runtime.sendMessage(EXT_ID, { action: "activatePro", key: "${key}" }, (response) => {
-        if (chrome.runtime.lastError) {
-            console.log("Extension not found or ID mismatch.");
-        } else {
-            console.log("Success!");
-        }
-    });
-}
-                setTimeout(() => window.close(), 5000);
+                const EXT_ID = "${EXT_ID}";
+                if (window.chrome && chrome.runtime) {
+                    chrome.runtime.sendMessage(EXT_ID, { action: "activatePro", key: "${key}" }, (response) => {
+                        console.log("Success message sent to extension.");
+                    });
+                }
+                setTimeout(() => window.close(), 4000);
             </script>
         </body>
-        </html>
-    `);
+        </html>`);
 });
 
-// 5. THE SCRAPING ROUTE
+// 5. SCRAPING ROUTE
 app.post('/api/scrape', async (req, res) => {
     const { keyword, isPro } = req.body;
     try {
-        const url = `https://html.duckduckgo.com/html/?q=${encodeURIComponent(keyword)}`;
-        const { data } = await axios.get(url, { 
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" },
+        const { data } = await axios.get(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(keyword)}`, { 
+            headers: { "User-Agent": "Mozilla/5.0" },
             timeout: 10000 
         });
-        
         const $ = cheerio.load(data);
         const textContent = $('body').text();
         const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
@@ -163,15 +137,12 @@ app.post('/api/scrape', async (req, res) => {
         const emails = [...new Set(textContent.match(emailRegex) || [])];
         const phones = [...new Set(textContent.match(phoneRegex) || [])];
 
-        let results = [];
-        const maxLength = Math.max(emails.length, phones.length);
-        for(let i = 0; i < maxLength; i++) {
-            results.push({
-                source: "Web Search",
-                email: emails[i] || null,
-                number: phones[i] || null
-            });
-        }
+        let results = emails.map((e, i) => ({
+            source: "Web Search",
+            email: e,
+            number: phones[i] || null
+        }));
+
         res.json({ success: true, data: results.slice(0, isPro ? 50 : 2) });
     } catch (error) {
         res.status(500).json({ success: false, error: "Scraping failed." });
@@ -179,4 +150,4 @@ app.post('/api/scrape', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`)); 
