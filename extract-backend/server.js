@@ -14,7 +14,7 @@ app.use(express.json({
     }
 }));
 
-const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbwDPrtHngB4ZloaUck9ivssJoeblq08KVIavH5zudLhm9ujkUNuiT902mLGSVKLxo_S/exec";
+const GOOGLE_SHEET_MACRO_URL = "https://script.google.com/macros/s/AKfycbyJN4LC8kA2_D5vK2dm7QFdZ-66zUXyf4et30BYDwDARB4gA-NCBhQHoafuPGZP3iC0/exec";
 const RAZORPAY_WEBHOOK_SECRET = "kugV3Aq5txeKYh/OsBaLezMPxSxJ0SUQGXgk+nKLpWLlBx2ahix7eya7QYa9quI1";
 const EXT_ID = "ndjmdakdfolbhianpjfcdhbjiabamdco"; 
 
@@ -151,3 +151,4 @@ app.post('/api/scrape', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`)); 
+
