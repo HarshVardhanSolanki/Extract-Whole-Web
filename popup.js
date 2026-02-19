@@ -22,7 +22,6 @@ async function startSearch() {
     const keyword = document.getElementById('keyword-input').value.trim();
     if (!keyword) return alert("Enter keyword.");
 
-    // Reset state for new search
     isSearching = true;
     currentResults = [];
     seenKeys.clear();
@@ -35,12 +34,16 @@ async function startSearch() {
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('status-bar').style.display = 'block';
 
-    while (isSearching && currentResults.length < targetCount && page < 15) {
+    while (isSearching && currentResults.length < targetCount && page < 25) {
         try {
+            // Human Speed Delay: Wait 1.5 - 3 seconds between requests
+            const delay = Math.floor(Math.random() * 1500) + 1500;
+            await new Promise(r => setTimeout(r, delay));
+
             const res = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ keyword, isPro, page })
+                body: JSON.stringify({ keyword, page })
             });
             const result = await res.json();
             
@@ -53,9 +56,6 @@ async function startSearch() {
                     }
                 });
                 renderTable();
-            } else if (page > 2 && result.data.length === 0) {
-                alert("No more extraction found.");
-                break;
             }
             page++;
         } catch (e) { break; }
@@ -77,7 +77,6 @@ function updateButtonStates(searching) {
 function renderTable() {
     const tbody = document.getElementById('results-body');
     tbody.innerHTML = '';
-    const wrapper = document.getElementById('table-wrapper');
     const displayLimit = isPro ? currentResults.length : 2;
 
     currentResults.forEach((lead, i) => {
@@ -90,48 +89,31 @@ function renderTable() {
             <td>${lead.email}</td>`;
         tbody.appendChild(tr);
     });
-    wrapper.style.display = currentResults.length > 0 ? 'block' : 'none';
+    document.getElementById('table-wrapper').style.display = currentResults.length > 0 ? 'block' : 'none';
 }
 
-// Support functions (loadSettings, activateKey, getDeviceId, initiatePayment) are standard local storage handlers
 async function loadSettings() {
-    const data = await chrome.storage.local.get(['isPro', 'dailyCount', 'currentKey']);
+    const data = await chrome.storage.local.get(['isPro', 'deviceId']);
     isPro = data.isPro || false;
-    updateUI();
-}
-
-function updateUI() {
     document.getElementById('plan-badge').textContent = isPro ? 'PRO' : 'FREE';
-    if (isPro) {
-        document.getElementById('footer-upgrade-btn').style.display = 'none';
-        document.getElementById('key-icon-btn').style.display = 'none';
-    }
-}
-
-async function getDeviceId() {
-    const data = await chrome.storage.local.get(['deviceId']);
-    if (data.deviceId) return data.deviceId;
-    const newId = crypto.randomUUID();
-    await chrome.storage.local.set({ deviceId: newId });
-    return newId;
+    if (isPro) document.getElementById('footer-upgrade-btn').style.display = 'none';
 }
 
 async function activateKey() {
     const key = document.getElementById('key-input').value.trim();
-    const deviceId = await getDeviceId();
-    const res = await fetch(`${RENDER_BACKEND_URL}/api/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, deviceId }) });
+    const data = await chrome.storage.local.get(['deviceId']);
+    const res = await fetch(`${RENDER_BACKEND_URL}/api/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ key, deviceId: data.deviceId }) });
     const result = await res.json();
     if (result.valid) {
         await chrome.storage.local.set({ isPro: true, currentKey: key });
         isPro = true;
-        updateUI();
-        document.getElementById('key-modal').style.display = 'none';
-    }
+        location.reload();
+    } else { alert("❌ Invalid Key"); }
 }
 
 async function initiatePayment(type) {
-    const deviceId = await getDeviceId();
-    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}&type=${type}`, 'RZP', 'width=450,height=650');
+    const data = await chrome.storage.local.get(['deviceId']);
+    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${data.deviceId}&type=${type}`, 'RZP', 'width=450,height=650');
 }
 
 initializeExtension();
