@@ -28,7 +28,17 @@
     </div>
     <div style="padding:20px 24px 10px;"><div style="position:relative;"><input id="keyword-input" type="text" placeholder="Search keyword..." class="search-bar"><button id="search-btn" class="btn-primary" style="position:absolute; right:5px; top:50%; transform:translateY(-50%);"><i class="fa-solid fa-magnifying-glass"></i></button></div></div>
     <div id="status-bar" style="display:none; padding:8px; background:#10b98122; color:#10b981; font-size:12px; text-align: center;">Searching...</div>
-    <div id="results-container"><div id="empty-state" style="text-align:center; padding-top:60px;"><div style="font-size:40px; margin-bottom:15px;">🔍</div><h3 style="margin:0; font-size:16px;">Ready to find leads</h3></div><div id="table-wrapper" style="display:none;"><table><thead><tr><th>#</th><th>Src</th><th>Mobile</th><th>Email</th></tr></thead><tbody id="results-body"></tbody></table></div></div>
+    <div id="results-container"><div id="empty-state" style="text-align:center; padding-top:60px;"><div style="font-size:40px; margin-bottom:15px;">🔍</div><h3 style="margin:0; font-size:16px;">Ready to find leads</h3></div><div id="table-wrapper" style="display:none;"><table>
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Website Link</th>
+            <th>Mobile</th>
+            <th>Email</th>
+        </tr>
+    </thead>
+    <tbody id="results-body"></tbody>
+</table></div></div>
     <div class="footer"><button id="footer-upgrade-btn" style="cursor:pointer; background:#10b981; color:white; padding:8px 18px; border-radius:9999px; font-weight:700; border:none;">Upgrade ₹499/mo</button><div id="usage-info" style="color:#71717a; font-size:12px;">Free • 2/day</div></div>
 
     <div id="key-modal" class="modal">
