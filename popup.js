@@ -1,34 +1,35 @@
 // --- PRODUCTION CONFIGURATION ---
 const RENDER_BACKEND_URL = "https://extract-whole-web.onrender.com";
-const RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/Qvf5EOnY"; // Your actual link!
+const RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/Qvf5EOnY"; 
 
 let isPro = false;
 let dailyCount = 0;
 let currentResults = [];
 
-// 1. Initialize immediately (No need to wait for DOMContentLoaded)
-loadSettings();
+// Ensure everything connects only AFTER the HTML is fully loaded
+document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+    
+    // Connect buttons to their functions
+    document.getElementById('key-icon-btn').addEventListener('click', showKeyModal);
+    document.getElementById('search-btn').addEventListener('click', startSearch);
+    document.getElementById('clear-btn').addEventListener('click', clearResults);
+    document.getElementById('footer-upgrade-btn').addEventListener('click', showUpgradeModal);
+    document.getElementById('cancel-key-btn').addEventListener('click', hideKeyModal);
+    document.getElementById('activate-key-btn').addEventListener('click', activateKey);
+    document.getElementById('pay-razorpay-btn').addEventListener('click', initiatePayment);
+    document.getElementById('maybe-later-btn').addEventListener('click', hideUpgradeModal);
 
-// 2. Attach Event Listeners to buttons directly
-document.getElementById('key-icon-btn').addEventListener('click', showKeyModal);
-document.getElementById('search-btn').addEventListener('click', startSearch);
-document.getElementById('clear-btn').addEventListener('click', clearResults);
-document.getElementById('footer-upgrade-btn').addEventListener('click', showUpgradeModal);
-document.getElementById('cancel-key-btn').addEventListener('click', hideKeyModal);
-document.getElementById('activate-key-btn').addEventListener('click', activateKey);
-document.getElementById('pay-razorpay-btn').addEventListener('click', initiatePayment);
-document.getElementById('maybe-later-btn').addEventListener('click', hideUpgradeModal);
+    // Event listener for dynamically generated table blur buttons
+    document.body.addEventListener('click', (e) => {
+        if (e.target.classList.contains('upgrade-teaser-btn')) {
+            showUpgradeModal();
+        }
+    });
 
-// 3. Event listener for dynamically created "Unlock Pro" teaser buttons
-document.body.addEventListener('click', (e) => {
-    if (e.target.classList.contains('upgrade-teaser-btn')) {
-        showUpgradeModal();
-    }
+    console.log("%c✅ Extension Scripts Loaded!", "color:#10b981;font-weight:700");
 });
 
-console.log("%c✅ Extract Whole Web connected securely!", "color:#10b981;font-weight:700");
-
-// --- CORE FUNCTIONS ---
 async function loadSettings() {
     const data = await chrome.storage.local.get(['isPro','dailyCount']);
     isPro = data.isPro || false;
