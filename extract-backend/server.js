@@ -74,45 +74,24 @@ app.post('/webhook/razorpay', async (req, res) => {
 });
 
 // 2.5 RAZORPAY HOSTED CHECKOUT PAGE (Fixes "No Device ID captured")
-app.get('/checkout', (req, res) => {
-    const deviceId = req.query.deviceId || "";
-    
-    const html = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <title>Upgrade to Pro | Extract Whole Web</title>
-        <style>
-            body { background: #18181b; color: white; font-family: sans-serif; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-            .loader { border: 4px solid #f3f3f3; border-top: 4px solid #10b981; border-radius: 50%; width: 40px; height: 40px; animation: spin 2s linear infinite; margin-bottom: 20px; }
-            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        </style>
-    </head>
-    <body>
-        <div class="loader"></div>
-        <h2>Opening Secure Checkout...</h2>
-        <form id="razorpay-form">
-            <script
-                src="https://checkout.razorpay.com/v1/payment-button.js"
-                data-payment_button_id="pl_SI5WenIOz8WnOS" 
-                data-notes.device_id="${deviceId}"
-                async>
+
+app.get('/payment-success', (req, res) => {
+    const key = req.query.key;
+    res.send(`
+        <html>
+        <body style="background:#18181b;color:white;text-align:center;padding-top:50px;font-family:sans-serif;">
+            <h2 style="color:#10b981;">✅ Payment Successful!</h2>
+            <p>Your Key: <strong>${key}</strong></p>
+            <p>You can close this window now. The extension has been activated.</p>
+            <script>
+                // Send the key back to the extension automatically
+                chrome.runtime.sendMessage("YOUR_EXTENSION_ID", { action: "activatePro", key: "${key}" });
+                // Auto-close after 5 seconds
+                setTimeout(() => window.close(), 5000);
             </script>
-        </form>
-        <script>
-            // Automatically trigger the payment button once loaded
-            const checkBtn = setInterval(() => {
-                const btn = document.querySelector('.razorpay-payment-button');
-                if(btn) {
-                    btn.click();
-                    clearInterval(checkBtn);
-                }
-            }, 500);
-        </script>
-    </body>
-    </html>
-    `;
-    res.send(html);
+        </body>
+        </html>
+    `);
 });
 
 // 3. THE SCRAPING ROUTE
@@ -156,6 +135,7 @@ app.post('/api/scrape', async (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Server live on port ${PORT}`));
+
 
 
 
