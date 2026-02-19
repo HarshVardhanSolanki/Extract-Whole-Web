@@ -1,44 +1,91 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8"><title>Extract Whole Web</title>
+    <meta charset="UTF-8">
+    <title>Extract Whole Web</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="header">
-        <div style="display:flex; align-items:center; gap:10px;">🌐 <h1 style="margin:0; font-size:18px;">Extract Web</h1></div>
-        <div style="display:flex; gap:8px;">
-            <button id="key-icon-btn">🔑 Key</button>
-            <div class="badge"><span id="plan-badge">FREE</span></div>
+    <div class="app-shell">
+        <div class="bg-orb orb-red"></div>
+        <div class="bg-orb orb-green"></div>
+        <div class="bg-orb orb-blue"></div>
+
+        <header class="header glass-card">
+            <div class="brand-wrap">
+                <span class="brand-icon">🌐</span>
+                <div>
+                    <h1>Extract Web</h1>
+                    <p class="subtitle">Smart contact finder from Google & Bing</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="key-icon-btn" class="ghost-btn">🔑 Key</button>
+                <div class="badge"><span id="plan-badge">FREE</span></div>
+            </div>
+        </header>
+
+        <section class="search-area glass-card">
+            <div class="chips-row">
+                <span class="chip">Google</span>
+                <span class="chip">Bing</span>
+            </div>
+            <div class="search-wrap">
+                <input id="keyword-input" type="text" placeholder="Search keyword...">
+                <button id="search-btn" class="btn-primary" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button id="stop-btn" class="btn-stop" style="display:none;"><i class="fa-solid fa-stop"></i> Stop</button>
+            </div>
+        </section>
+
+        <div id="status-bar" style="display:none;">Searching... (Goal: 100 Contacts)</div>
+
+        <main id="results-container" class="glass-card">
+            <div id="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>Ready to find leads</h3>
+                <p>Type a keyword and start extracting verified emails & mobiles.</p>
+            </div>
+
+            <div id="table-wrapper" style="display:none;">
+                <div class="results-topbar">
+                    <h2>Results</h2>
+                    <button id="clear-btn" class="ghost-btn">Clear</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr><th>#</th><th>Website Link</th><th>Mobile</th><th>Email</th></tr>
+                    </thead>
+                    <tbody id="results-body"></tbody>
+                </table>
+            </div>
+        </main>
+
+        <footer class="footer glass-card">
+            <button id="footer-upgrade-btn">Upgrade ₹499/mo</button>
+            <div id="usage-info">Free • 2 leads left today</div>
+        </footer>
+    </div>
+
+    <div id="key-modal" class="modal">
+        <div class="modal-content">
+            <h3>Activate Key</h3>
+            <input id="key-input" placeholder="Paste key...">
+            <div class="modal-actions">
+                <button id="cancel-key-btn" class="ghost-btn">Cancel</button>
+                <button id="activate-key-btn" class="btn-primary">Activate</button>
+            </div>
         </div>
     </div>
 
-    <div class="search-area">
-        <div style="position:relative;">
-            <input id="keyword-input" type="text" placeholder="Search keyword...">
-            <button id="search-btn" class="btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
-            <button id="stop-btn" class="btn-stop" style="display:none;"><i class="fa-solid fa-stop"></i> Stop</button>
+    <div id="upgrade-modal" class="modal">
+        <div class="modal-content">
+            <h3>Choose Plan</h3>
+            <div id="pay-sub-btn" class="plan-card">Monthly Auto-Renew</div>
+            <div id="pay-once-btn" class="plan-card">Monthly One-Time</div>
+            <button id="maybe-later-btn" class="ghost-btn">Maybe later</button>
         </div>
     </div>
-
-    <div id="status-bar" style="display:none;">Searching... (Goal: 100 Contacts)</div>
-
-    <div id="results-container">
-        <div id="empty-state" style="text-align:center; padding-top:60px;">🔍<h3>Ready to find leads</h3></div>
-        <div id="table-wrapper" style="display:none;">
-            <div style="display:flex; justify-content:space-between; margin-bottom:10px;"><h2>Results</h2><button id="clear-btn">Clear</button></div>
-            <table><thead><tr><th>#</th><th>Website Link</th><th>Mobile</th><th>Email</th></tr></thead><tbody id="results-body"></tbody></table>
-        </div>
-    </div>
-
-    <div class="footer">
-        <button id="footer-upgrade-btn">Upgrade ₹499/mo</button>
-        <div id="usage-info">Free • 2 leads left today</div>
-    </div>
-
-    <div id="key-modal" class="modal"><div class="modal-content"><h3>Activate Key</h3><input id="key-input" placeholder="Paste key..."><div style="display:flex; gap:10px; margin-top:15px;"><button id="cancel-key-btn">Cancel</button><button id="activate-key-btn" class="btn-primary">Activate</button></div></div></div>
-    <div id="upgrade-modal" class="modal"><div class="modal-content"><h3>Choose Plan</h3><div id="pay-sub-btn" class="plan-card">Monthly Auto-Renew</div><div id="pay-once-btn" class="plan-card">Monthly One-Time</div><button id="maybe-later-btn">Maybe later</button></div></div>
 
     <script src="popup.js"></script>
 </body>

@@ -26,45 +26,166 @@ const USER_AGENTS = [
 const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
 // Enhanced regex for better mobile number extraction
 const phoneRegex = /(?:\+?\d{1,3}[\s-]?)?\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}|(?:\+91[\-\s]?)?[6-9]\d{9}/g;
+const TARGET_CONTACTS = 100;
+const activeSearches = new Map();
+const BLOCKED_HOSTS = ['google.', 'bing.com', 'search.yahoo.com', 'yahoo.com', 'duckduckgo.com'];
 
-async function fetchPage(url) {
+async function fetchPage(url, signal) {
     try {
         const { data } = await axios.get(url, {
             headers: { "User-Agent": USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)] },
-            timeout: 8000
+            signal
         });
         return data;
     } catch (e) { return null; }
 }
 
-app.post('/api/scrape', async (req, res) => {
-    const { keyword, page = 0 } = req.body;
-    
-    const engines = [
-        { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}`, container: ".g", link: "a" },
-        { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}`, container: ".b_algo", link: "a" },
-        { name: "Yahoo", url: `https://search.yahoo.com/search?p=${encodeURIComponent(keyword)}&b=${page * 10 + 1}`, container: ".algo", link: "a" },
-        { name: "DuckDuckGo", url: `https://html.duckduckgo.com/html/?q=${encodeURIComponent(keyword)}`, container: ".result", link: ".result__a" }
+function getEngines(keyword, page) {
+    return [
+        { name: "Google", url: `https://www.google.com/search?q=${encodeURIComponent(keyword)}&start=${page * 10}` },
+        { name: "Bing", url: `https://www.bing.com/search?q=${encodeURIComponent(keyword)}&first=${page * 10 + 1}` }
     ];
+}
 
-    const results = await Promise.all(engines.map(async (engine) => {
-        const html = await fetchPage(engine.url);
-        if (!html) return [];
-        const $ = cheerio.load(html);
-        let local = [];
-        $(engine.container).each((i, el) => {
-            const text = $(el).text();
-            const link = $(el).find(engine.link).attr('href') || "NA";
-            const emails = text.match(emailRegex) || [];
-            const phones = text.match(phoneRegex) || [];
-            const count = Math.max(emails.length, phones.length);
-            for (let j = 0; j < count; j++) {
-                local.push({ website: link, mobile: phones[j] || "NA", email: emails[j] || "NA" });
-            }
-        });
-        return local;
-    }));
-    res.json({ success: true, data: results.flat() });
+function normalizeResultUrl(url) {
+    if (!url) return null;
+    if (url.startsWith('/url?q=')) {
+        const raw = url.split('/url?q=')[1] || '';
+        return decodeURIComponent(raw.split('&')[0] || '').trim();
+    }
+    return url.trim();
+}
+
+function isValidSourceUrl(url) {
+    if (!url || !/^https?:\/\//i.test(url)) return false;
+    try {
+        const host = new URL(url).hostname.toLowerCase();
+        return !BLOCKED_HOSTS.some((blocked) => host.includes(blocked));
+    } catch (e) {
+        return false;
+    }
+}
+
+function collectGoogleLinks(html) {
+    const $ = cheerio.load(html);
+    const seen = new Set();
+    const urls = [];
+    $('.g a[href]').each((i, el) => {
+        const href = normalizeResultUrl($(el).attr('href'));
+        if (!isValidSourceUrl(href) || seen.has(href)) return;
+        seen.add(href);
+        urls.push(href);
+    });
+    return urls;
+}
+
+function collectBingLinks(html) {
+    const $ = cheerio.load(html);
+    const seen = new Set();
+    const urls = [];
+    $('.b_algo h2 a[href]').each((i, el) => {
+        const href = normalizeResultUrl($(el).attr('href'));
+        if (!isValidSourceUrl(href) || seen.has(href)) return;
+        seen.add(href);
+        urls.push(href);
+    });
+    return urls;
+}
+
+function extractContactsFromSource(html, sourceUrl) {
+    const text = cheerio.load(html).text();
+    const emails = [...new Set(text.match(emailRegex) || [])];
+    const phones = [...new Set(text.match(phoneRegex) || [])]
+        .map((value) => value.replace(/\s+/g, ' ').trim())
+        .filter((value) => value.replace(/\D/g, '').length >= 10);
+
+    const count = Math.max(emails.length, phones.length);
+    const local = [];
+    for (let j = 0; j < count; j++) {
+        local.push({ website: sourceUrl, mobile: phones[j] || "NA", email: emails[j] || "NA" });
+    }
+    return local;
+}
+
+async function scrapePage(keyword, page, signal) {
+    const engines = getEngines(keyword, page);
+    const collected = [];
+
+    for (const engine of engines) {
+        if (signal?.aborted) break;
+        const searchHtml = await fetchPage(engine.url, signal);
+        if (!searchHtml) continue;
+
+        const links = engine.name === 'Google' ? collectGoogleLinks(searchHtml) : collectBingLinks(searchHtml);
+
+        for (const sourceUrl of links) {
+            if (signal?.aborted) break;
+            const sourceHtml = await fetchPage(sourceUrl, signal);
+            if (!sourceHtml) continue;
+            const extracted = extractContactsFromSource(sourceHtml, sourceUrl);
+            if (extracted.length > 0) collected.push(...extracted);
+        }
+    }
+
+    return collected;
+}
+
+app.post('/api/scrape', async (req, res) => {
+    const { keyword, page, requesterId = 'default' } = req.body;
+    if (!keyword || !keyword.trim()) return res.status(400).json({ success: false, message: 'Keyword is required' });
+
+    const normalizedKeyword = keyword.trim();
+    const existing = activeSearches.get(requesterId);
+
+    if (existing && existing.keyword !== normalizedKeyword) {
+        existing.controller.abort();
+        activeSearches.delete(requesterId);
+    }
+
+    if (Number.isInteger(page)) {
+        const data = await scrapePage(normalizedKeyword, page, undefined);
+        return res.json({ success: true, data });
+    }
+
+    const controller = new AbortController();
+    activeSearches.set(requesterId, { keyword: normalizedKeyword, controller });
+
+    try {
+        const seen = new Set();
+        const contacts = [];
+        let currentPage = 0;
+
+        while (contacts.length < TARGET_CONTACTS && !controller.signal.aborted) {
+            const pageResults = await scrapePage(normalizedKeyword, currentPage, controller.signal);
+            pageResults.forEach((lead) => {
+                const key = `${lead.email}-${lead.mobile}`;
+                if (!seen.has(key) && (lead.email !== 'NA' || lead.mobile !== 'NA')) {
+                    seen.add(key);
+                    contacts.push(lead);
+                }
+            });
+            currentPage += 1;
+        }
+
+        res.json({ success: true, data: contacts.slice(0, TARGET_CONTACTS), stopped: controller.signal.aborted });
+    } catch (error) {
+        res.status(500).json({ success: false, data: [], message: 'Search failed' });
+    } finally {
+        if (activeSearches.get(requesterId)?.controller === controller) {
+            activeSearches.delete(requesterId);
+        }
+    }
+});
+
+app.post('/api/scrape/stop', (req, res) => {
+    const { requesterId = 'default' } = req.body || {};
+    const running = activeSearches.get(requesterId);
+    if (running) {
+        running.controller.abort();
+        activeSearches.delete(requesterId);
+        return res.json({ success: true, stopped: true });
+    }
+    res.json({ success: true, stopped: false });
 });
 
 app.post('/api/verify', async (req, res) => {
