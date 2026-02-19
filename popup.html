@@ -15,7 +15,10 @@
         <header class="header glass-card">
             <div class="brand-wrap">
                 <span class="brand-icon">🌐</span>
-                <h1>Extract Web</h1>
+                <div>
+                    <h1>Extract Web</h1>
+                    <p class="subtitle">Smart contact finder from all major engines</p>
+                </div>
             </div>
             <div class="header-actions">
                 <button id="key-icon-btn" class="ghost-btn">🔑 Key</button>
@@ -24,9 +27,15 @@
         </header>
 
         <section class="search-area glass-card">
+            <div class="chips-row">
+                <span class="chip">Google</span>
+                <span class="chip">Bing</span>
+                <span class="chip">Yahoo</span>
+                <span class="chip">DuckDuckGo</span>
+            </div>
             <div class="search-wrap">
                 <input id="keyword-input" type="text" placeholder="Search keyword...">
-                <button id="search-btn" class="btn-primary"><i class="fa-solid fa-magnifying-glass"></i></button>
+                <button id="search-btn" class="btn-primary" aria-label="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
                 <button id="stop-btn" class="btn-stop" style="display:none;"><i class="fa-solid fa-stop"></i> Stop</button>
             </div>
         </section>
@@ -34,7 +43,11 @@
         <div id="status-bar" style="display:none;">Searching... (Goal: 100 Contacts)</div>
 
         <main id="results-container" class="glass-card">
-            <div id="empty-state">🔍<h3>Ready to find leads</h3></div>
+            <div id="empty-state">
+                <div class="empty-icon">🔍</div>
+                <h3>Ready to find leads</h3>
+                <p>Type a keyword and start extracting verified emails & mobiles.</p>
+            </div>
 
             <div id="table-wrapper" style="display:none;">
                 <div class="results-topbar">
