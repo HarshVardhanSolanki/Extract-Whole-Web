@@ -1,16 +1,11 @@
-// --- PRODUCTION CONFIGURATION ---
 const RENDER_BACKEND_URL = "https://extract-whole-web.onrender.com";
-const RAZORPAY_PAYMENT_LINK = "https://rzp.io/rzp/Qvf5EOnY"; 
 
 let isPro = false;
 let dailyCount = 0;
 let currentResults = [];
 
-// Ensure everything connects only AFTER the HTML is fully loaded
-document.addEventListener('DOMContentLoaded', () => {
+function initializeExtension() {
     loadSettings();
-    
-    // Connect buttons to their functions
     document.getElementById('key-icon-btn').addEventListener('click', showKeyModal);
     document.getElementById('search-btn').addEventListener('click', startSearch);
     document.getElementById('clear-btn').addEventListener('click', clearResults);
@@ -20,15 +15,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('pay-razorpay-btn').addEventListener('click', initiatePayment);
     document.getElementById('maybe-later-btn').addEventListener('click', hideUpgradeModal);
 
-    // Event listener for dynamically generated table blur buttons
     document.body.addEventListener('click', (e) => {
         if (e.target.classList.contains('upgrade-teaser-btn')) {
             showUpgradeModal();
         }
     });
+}
 
-    console.log("%c✅ Extension Scripts Loaded!", "color:#10b981;font-weight:700");
-});
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeExtension);
+} else {
+    initializeExtension();
+}
 
 async function loadSettings() {
     const data = await chrome.storage.local.get(['isPro','dailyCount']);
@@ -64,8 +62,8 @@ async function getDeviceId() {
 async function activateKey() {
     const key = document.getElementById('key-input').value.trim();
     if (!key) return alert("Please enter a key.");
-    
     const deviceId = await getDeviceId();
+    document.getElementById('activate-key-btn').innerText = "Verifying...";
 
     try {
         const response = await fetch(`${RENDER_BACKEND_URL}/api/verify`, {
@@ -73,9 +71,7 @@ async function activateKey() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ key, deviceId })
         });
-        
         const result = await response.json();
-
         if (result.valid) {
             alert("✅ " + result.message);
             isPro = true;
@@ -86,13 +82,16 @@ async function activateKey() {
             alert("❌ " + result.message);
         }
     } catch (err) {
-        alert("❌ Could not connect to the server. Please check your internet or try again.");
+        alert("❌ Server connection error.");
     }
+    document.getElementById('activate-key-btn').innerText = "Activate";
 }
 
-function initiatePayment() {
+// Opens the Razorpay Checkout hosted on your Render server
+async function initiatePayment() {
     hideUpgradeModal();
-    window.open(RAZORPAY_PAYMENT_LINK, '_blank');
+    const deviceId = await getDeviceId();
+    window.open(`${RENDER_BACKEND_URL}/checkout?deviceId=${deviceId}`, '_blank');
 }
 
 async function startSearch() {
@@ -108,6 +107,7 @@ async function startSearch() {
     document.getElementById('status-bar').style.display = 'block';
     document.getElementById('empty-state').style.display = 'none';
     document.getElementById('table-wrapper').style.display = 'none';
+    document.getElementById('search-btn').disabled = true;
 
     try {
         const response = await fetch(`${RENDER_BACKEND_URL}/api/scrape`, {
@@ -115,70 +115,60 @@ async function startSearch() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ keyword, isPro })
         });
-
         const result = await response.json();
 
         if (result.success) {
             currentResults = result.data;
             renderTable();
             
-            if (!isPro) {
+            // Only decrease limit if results were actually found
+            if (!isPro && currentResults.length > 0) {
                 dailyCount++;
                 chrome.storage.local.set({dailyCount});
             }
         } else {
             alert("Scraping failed: " + result.error);
         }
-
     } catch (err) {
-        console.error(err);
         alert("❌ Server error. Please try again.");
     }
-
     document.getElementById('status-bar').style.display = 'none';
+    document.getElementById('search-btn').disabled = false;
     updateUI();
 }
 
 function renderTable() {
     const tbody = document.getElementById('results-body');
     tbody.innerHTML = '';
-    
     const displayLimit = isPro ? currentResults.length : 2;
 
     currentResults.forEach((lead, i) => {
         const tr = document.createElement('tr');
         tr.className = (i >= displayLimit && !isPro) ? 'locked-row' : '';
-        
         tr.innerHTML = `
             <td>${i + 1}</td>
             <td><span style="color:#34d399;">${lead.source}</span></td>
             <td style="font-family:monospace;">${lead.number || 'NA'}</td>
             <td style="font-family:monospace;">${lead.email || 'NA'}</td>
         `;
-
         if (i >= displayLimit && !isPro) {
             const td = document.createElement('td');
             td.colSpan = 4;
             td.style.position = 'absolute';
             td.style.inset = '0';
             td.style.padding = '0';
-            
-            td.innerHTML = `
-                <div class="teaser" style="display:flex; width: 100%; height: 100%;">
-                    <div class="upgrade-teaser-btn" style="background:white;color:#10b981;padding:8px 24px;border-radius:9999px;font-weight:700;cursor:pointer;">
-                        UNLOCK PRO ₹499/mo
-                    </div>
-                </div>
-            `;
+            td.innerHTML = `<div class="teaser" style="display:flex; width: 100%; height: 100%;">
+                <div class="upgrade-teaser-btn" style="background:white;color:#10b981;padding:8px 24px;border-radius:9999px;font-weight:700;cursor:pointer;">UNLOCK PRO ₹499/mo</div>
+            </div>`;
             tr.appendChild(td);
         }
         tbody.appendChild(tr);
     });
-
     if(currentResults.length > 0) {
         document.getElementById('table-wrapper').style.display = 'block';
     } else {
         alert("No emails or numbers found for this keyword.");
+        document.getElementById('empty-state').style.display = 'block';
     }
 }
 
