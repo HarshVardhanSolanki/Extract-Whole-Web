@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Extract Whole Web",
-  "version": "1.0.5",
+  "version": "1.0.7",
   "description": "Extract emails & mobile numbers from any keyword",
   "icons": {
     "128": "icon.png"
@@ -14,5 +14,8 @@
     "service_worker": "background.js"
   },
   "permissions": ["storage", "activeTab"],
-  "host_permissions": ["<all_urls>"]
+  "host_permissions": ["<all_urls>"],
+  "externally_connectable": {
+    "matches": ["https://extract-whole-web.onrender.com/*"]
+  }
 }
