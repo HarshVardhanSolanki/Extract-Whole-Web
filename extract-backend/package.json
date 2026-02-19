@@ -1,11 +1,8 @@
 {
   "name": "extract-backend",
   "version": "1.0.0",
-  "description": "Backend for Extract Whole Web Extension",
   "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
+  "scripts": { "start": "node server.js" },
   "dependencies": {
     "axios": "^1.13.5",
     "cheerio": "^1.2.0",
